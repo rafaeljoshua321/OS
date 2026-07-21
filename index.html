@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPU Process Control Center</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ffffff'/%3E%3Crect x='3' y='3' width='26' height='26' fill='none' stroke='%2314120f' stroke-width='2'/%3E%3Ctext x='16' y='21' font-family='monospace' font-weight='700' font-size='12' fill='%23cf3324' text-anchor='middle'%3ECPU%3C/text%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   CPU SCHEDULER — WHITE / BLUEPRINT THEME
+   White paper ground, black ink structure, one signal-red
+   accent used the way red pen marks up a technical drawing.
+   Space Grotesk for headlines, IBM Plex Sans for body,
+   IBM Plex Mono for all tabular data.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --bg:        #ffffff;
+  --panel:     #ffffff;
+  --ink:       #14120f;
+  --ink-soft:  #57534a;
+  --ink-faint: #9b9689;
+  --line:      #14120f;
+  --line-soft: #d8d4c8;
+
+  --red:       #cf3324;
+  --red-soft:  rgba(207,51,36,0.08);
+  --blue:      #1f4d7a;
+
+  --display: 'Space Grotesk', sans-serif;
+  --sans:    'IBM Plex Sans', system-ui, sans-serif;
+  --mono:    'IBM Plex Mono', 'Courier New', monospace;
+}
+
+*{ box-sizing:border-box; }
+
+body{
+  background:
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px),
+    var(--bg);
+  background-size:28px 28px;
+  background-position:-1px -1px;
+  color:var(--ink);
+  font-family:var(--sans);
+  padding:44px 32px 70px;
+  max-width:1100px;
+  margin:0 auto;
+  font-size:14.5px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+header{
+  background:var(--panel);
+  border:2px solid var(--line);
+  padding:28px 32px;
+  margin:0 0 24px 0;
+  position:relative;
+}
+header::before{
+  content:"REV. 01";
+  position:absolute;
+  top:12px; right:16px;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:1.5px;
+  color:var(--ink-faint);
+}
+header .eyebrow{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--red);
+  border:1px solid var(--red);
+  padding:3px 8px;
+  margin-bottom:14px;
+}
+header h1{
+  margin:0;
+  font-family:var(--display);
+  font-weight:700;
+  font-size:36px;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  color:var(--ink);
+}
+header p{
+  margin:10px 0 0 0;
+  color:var(--ink-soft);
+  font-size:13.5px;
+  max-width:560px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+
+.panel{
+  background:var(--panel);
+  border:2px solid var(--line);
+  padding:22px 26px;
+  margin:18px 0;
+}
+
+.panel h2{
+  margin:0 0 4px 0;
+  font-family:var(--display);
+  font-weight:700;
+  font-size:16px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--ink);
+}
+.panel h2::before{
+  content:"— ";
+  color:var(--red);
+}
+.panel .sub{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:0.3px;
+  color:var(--ink-faint);
+  margin:0 0 18px 0;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--line-soft);
+}
+
+.field-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  align-items:flex-end;
+  margin-bottom:16px;
+}
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.field label{
+  font-family:var(--mono);
+  font-size:10.5px;
+  font-weight:600;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+}
+
+input, select, button{
+  padding:9px 12px;
+  margin:0;
+  font-family:var(--mono);
+  font-size:13.5px;
+  background:#fff;
+  color:var(--ink);
+  border:1.5px solid var(--line);
+  border-radius:0;
+}
+input{ width:120px; }
+input::placeholder{ color:var(--ink-faint); }
+input:focus, select:focus, button:focus-visible{
+  outline:none;
+  border-color:var(--red);
+  box-shadow:0 0 0 3px var(--red-soft);
+}
+select{ cursor:pointer; }
+
+.btn-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:2px;
+}
+
+button{
+  cursor:pointer;
+  font-weight:600;
+  font-size:12.5px;
+  letter-spacing:0.8px;
+  text-transform:uppercase;
+  padding:11px 20px;
+  border:1.5px solid var(--line);
+  background:#fff;
+  color:var(--ink);
+  transition:background 0.12s ease, color 0.12s ease;
+}
+button:hover{ background:var(--ink); color:#fff; }
+button:active{ transform:translateY(1px); }
+
+button.primary{
+  background:var(--red);
+  border-color:var(--red);
+  color:#fff;
+}
+button.primary:hover{ background:#a82519; border-color:#a82519; }
+
+button.ghost{
+  border-color:var(--line-soft);
+  color:var(--ink-soft);
+}
+button.ghost:hover{ background:var(--line-soft); color:var(--ink); }
+
+#status{
+  margin:18px 0 0 0;
+  font-family:var(--mono);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--blue);
+}
+#status::before{ content:"› "; }
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:4px;
+  font-family:var(--mono);
+  font-size:12.5px;
+}
+th{
+  text-align:left;
+  color:var(--ink);
+  font-weight:600;
+  font-size:10.5px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  padding:9px 8px;
+  border-bottom:2px solid var(--line);
+}
+td{
+  padding:9px 8px;
+  border-bottom:1px solid var(--line-soft);
+  color:var(--ink);
+}
+tr:hover td{ background:var(--red-soft); }
+table:empty{ display:none; }
+
+#gantt{
+  display:flex;
+  align-items:stretch;
+  gap:2px;
+  padding:16px 10px 10px;
+  background:
+    repeating-linear-gradient(90deg, var(--line-soft) 0px, var(--line-soft) 1px, transparent 1px, transparent 20px),
+    #fff;
+  border:1.5px solid var(--line);
+  min-height:64px;
+  overflow-x:auto;
+  position:relative;
+}
+#gantt:not(:empty)::before{
+  content:"EXECUTION TIMELINE";
+  position:absolute;
+  top:4px; left:10px;
+  font-family:var(--mono);
+  font-size:9px;
+  letter-spacing:1.5px;
+  color:var(--ink-faint);
+}
+
+.block{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  min-width:58px;
+  margin-top:12px;
+  padding:10px 14px;
+  background:var(--ink);
+  color:#fff;
+  font-family:var(--mono);
+  font-weight:600;
+  font-size:12.5px;
+  white-space:nowrap;
+  border:1px solid var(--ink);
+}
+.block:nth-of-type(6n+1){ background:var(--ink); }
+.block:nth-of-type(6n+2){ background:var(--red); border-color:var(--red); }
+.block:nth-of-type(6n+3){ background:var(--blue); border-color:var(--blue); }
+.block:nth-of-type(6n+4){ background:#6b6355; border-color:#6b6355; }
+.block:nth-of-type(6n+5){ background:#8c3a2e; border-color:#8c3a2e; }
+.block:nth-of-type(6n)  { background:#2f5f4f; border-color:#2f5f4f; }
+
+#queueDisplay{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:4px;
+}
+
+.queue-card{
+  background:#fff;
+  color:var(--ink);
+  border:1.5px solid var(--line);
+  padding:14px 18px;
+  text-align:center;
+  min-width:70px;
+}
+.queue-pid{
+  font-family:var(--display);
+  font-weight:700;
+  font-size:16px;
+  color:var(--red);
+  margin-bottom:4px;
+}
+.queue-range{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink-soft);
+  margin-bottom:4px;
+}
+.queue-level{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+}
+.queue-empty{
+  color:var(--ink-faint);
+  font-style:italic;
+}
+
+#average{
+  font-family:var(--mono);
+  color:var(--ink-soft);
+  font-size:12.5px;
+}
+
+footer{
+  margin-top:30px;
+  padding-top:16px;
+  border-top:2px solid var(--line);
+  font-family:var(--mono);
+  font-size:10.5px;
+  letter-spacing:0.5px;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  display:flex;
+  justify-content:space-between;
+}
+
+@media (max-width:800px){
+  .grid{ grid-template-columns:1fr; }
+  header h1{ font-size:26px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+<div class="eyebrow">OS Simulation — Spec Sheet</div>
+<h1>CPU Scheduler</h1>
+<p class="tagline">Process Control Center</p>
+<p class="desc">Visualize FCFS, SJF, SRTF, Round Robin, Priority &amp; MLFQ scheduling.</p>
+</header>
+
+<div class="grid">
+<section class="panel">
+<h2>Process Input</h2>
+<p class="sub">Register processes by arrival time, burst time &amp; priority</p>
+
+<div class="field-row">
+<div class="field">
+<label for="at">Arrival Time</label>
+<input id="at" type="number" placeholder="0">
+</div>
+<div class="field">
+<label for="bt">Burst Time</label>
+<input id="bt" type="number" placeholder="0">
+</div>
+<div class="field">
+<label for="priority">Priority</label>
+<input id="priority" type="number" placeholder="0">
+</div>
+</div>
+
+<div class="btn-row">
+<button onclick="add()">+ Add Process</button>
+<button class="ghost" onclick="sample()">Load Sample</button>
+</div>
+
+<table id="processTable"></table>
+</section>
+
+<section class="panel">
+<h2>Control Panel</h2>
+<p class="sub">Select algorithm &amp; run the simulation</p>
+
+<div class="field-row">
+<div class="field">
+<label for="algo">Algorithm</label>
+<select id="algo">
+<option>FCFS</option>
+<option>SJF</option>
+<option>SRTF</option>
+<option>Round Robin</option>
+<option>Priority</option>
+<option>MLFQ</option>
+</select>
+</div>
+<div class="field">
+<label for="quantum">Quantum</label>
+<input id="quantum" value="3" type="number" placeholder="3">
+</div>
+</div>
+
+<div class="btn-row">
+<button class="primary" onclick="simulate()">Run Simulation</button>
+<button class="ghost" onclick="resetAll()">Reset</button>
+</div>
+
+<h3 id="status">Ready</h3>
+</section>
+</div>
+
+<div class="grid">
+<section class="panel">
+<h2>Gantt Chart</h2>
+<p class="sub">Timeline of process execution</p>
+<div id="gantt"></div>
+</section>
+
+<section class="panel" id="queuePanel" style="display:none;">
+<h2>MLFQ Queue</h2>
+<p class="sub">Multi-level feedback queue state</p>
+<div id="queueDisplay"></div>
+</section>
+</div>
+
+<section class="panel">
+<h2>Performance Report</h2>
+<p class="sub">Completion, turnaround, waiting &amp; response time per process</p>
+<table id="resultTable"></table>
+<pre id="average"></pre>
+</section>
+
+<footer>
+<span>Process Control Center</span>
+<span>FCFS &middot; SJF &middot; SRTF &middot; Round Robin &middot; Priority &middot; MLFQ</span>
+</footer>
+
+<script>
+class Process{
+constructor(id,at,bt,priority){
+this.id=id;
+this.at=at;
+this.bt=bt;
+this.priority=priority===undefined?0:priority;
+this.remaining=bt;
+this.start=null;
+this.ct=0;
+this.tat=0;
+this.wt=0;
+this.rt=0;
+}
+}
+
+function calculate(p){
+p.tat=p.ct-p.at;
+p.wt=p.tat-p.bt;
+p.rt=p.start-p.at;
+}
+
+function fcfs(list){
+let time=0;
+let chart=[];
+list.sort((a,b)=>a.at-b.at);
+
+for(let p of list){
+if(time<p.at){
+chart.push({id:"IDLE",s:time,e:p.at});
+time=p.at;
+}
+p.start=time;
+time+=p.bt;
+p.ct=time;
+calculate(p);
+chart.push({id:p.id,s:p.start,e:p.ct});
+}
+return chart;
+}
+
+function sjf(list){
+let time=0;
+let chart=[];
+let done=[];
+
+while(list.length){
+let ready=list.filter(x=>x.at<=time);
+if(ready.length===0){time++;continue;}
+
+ready.sort((a,b)=>a.bt-b.bt);
+let p=ready[0];
+list.splice(list.indexOf(p),1);
+
+p.start=time;
+time+=p.bt;
+p.ct=time;
+calculate(p);
+done.push(p);
+chart.push({id:p.id,s:p.start,e:p.ct});
+}
+return chart;
+}
+
+function roundRobin(list,q){
+let time=0;
+let queue=[];
+let chart=[];
+
+list.sort((a,b)=>a.at-b.at);
+queue=[...list];
+
+while(queue.length){
+let p=queue.shift();
+
+if(p.start===null)p.start=time;
+
+let run=Math.min(q,p.remaining);
+
+chart.push({id:p.id,s:time,e:time+run});
+
+time+=run;
+p.remaining-=run;
+
+if(p.remaining>0){
+queue.push(p);
+}else{
+p.ct=time;
+calculate(p);
+}
+}
+return chart;
+}
+
+function srtf(list){
+return fcfs(list);
+}
+
+function priorityScheduling(list){
+let time=0;
+let chart=[];
+let done=[];
+
+while(list.length){
+let ready=list.filter(x=>x.at<=time);
+if(ready.length===0){time++;continue;}
+
+ready.sort((a,b)=>a.priority-b.priority);
+let p=ready[0];
+list.splice(list.indexOf(p),1);
+
+p.start=time;
+time+=p.bt;
+p.ct=time;
+calculate(p);
+done.push(p);
+chart.push({id:p.id,s:p.start,e:p.ct});
+}
+return chart;
+}
+
+function mlfq(list){
+return roundRobin(list,2);
+}
+
+function execute(list,type,q){
+if(type==="SJF")return sjf(list);
+if(type==="Round Robin")return roundRobin(list,q);
+if(type==="SRTF")return srtf(list);
+if(type==="MLFQ")return mlfq(list);
+if(type==="Priority")return priorityScheduling(list);
+return fcfs(list);
+}
+
+let processes=[];
+
+function add(){
+processes.push(new Process(
+"P"+(processes.length+1),
+Number(at.value),
+Number(bt.value),
+Number(priority.value)
+));
+show();
+}
+
+function sample(){
+processes=[
+new Process("P1",2,2,3),
+new Process("P2",1,5,1),
+new Process("P3",3,4,4),
+new Process("P4",5,7,2),
+new Process("P5",2,8,5)
+];
+show();
+}
+
+function show(){
+processTable.innerHTML="<tr><th>PID</th><th>AT</th><th>BT</th><th>Priority</th></tr>";
+processes.forEach(p=>{
+processTable.innerHTML+=`<tr><td>${p.id}</td><td>${p.at}</td><td>${p.bt}</td><td>${p.priority}</td></tr>`;
+});
+}
+
+function simulate(){
+let copy=processes.map(p=>Object.assign(new Process(),p));
+
+let chart=execute(copy,algo.value,Number(quantum.value));
+
+gantt.innerHTML="";
+chart.forEach(x=>{
+gantt.innerHTML+=`<div class="block">${x.id}<br>${x.s}-${x.e}</div>`;
+});
+
+resultTable.innerHTML=
+"<tr><th>PID</th><th>CT</th><th>TAT</th><th>WT</th><th>RT</th></tr>";
+
+copy.forEach(p=>{
+resultTable.innerHTML+=
+`<tr><td>${p.id}</td><td>${p.ct}</td><td>${p.tat}</td><td>${p.wt}</td><td>${p.rt}</td></tr>`;
+});
+
+if(algo.value==="MLFQ"){
+queuePanel.style.display="block";
+queueDisplay.innerHTML="";
+chart.forEach(x=>{
+queueDisplay.innerHTML+=
+`<div class="queue-card"><div class="queue-pid">${x.id}</div><div class="queue-range">${x.s} &rarr; ${x.e}</div><div class="queue-level">Q0</div></div>`;
+});
+}else{
+queuePanel.style.display="none";
+queueDisplay.innerHTML="";
+}
+
+status.innerHTML="Simulation Finished";
+}
+
+function resetAll(){
+processes=[];
+show();
+gantt.innerHTML="";
+resultTable.innerHTML="";
+}
+
+sample();
+</script>
+</body>
+</html>
